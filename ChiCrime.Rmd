@@ -1,0 +1,89 @@
+---
+title: "Analysis of Chicago Crime Trends"
+author: "Jim Maurer"
+date: "March 12, 2017"
+output: ioslides_presentation
+---
+
+<style type="text/css">
+
+body, td {
+   font-size: 14px;
+}
+code.r{
+  font-size: 14px;
+}
+pre {
+  font-size: 14px;
+  line-height: normal;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE )
+```
+
+## Data For Chicago Crime Trend
+<span style="font-size: 16px !important;">
+There has been a lot of discussion about crime in Chicago. Chicago has always seemed, in the popular imagination to be a dangerous place. What is really going on? Is crime really getting worse in Chicago? Fortunately the City of Chicago's Open Data Portal has data that might shed some light on this question.</span>
+<br><br>
+<span style="font-size: 16px !important;">
+The data used in this application were obtained from the City of Chicago Data Portal. The *Crimes - 2001 to present* dataset can be found here:  <https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2></span>
+<br><br>
+<span style="font-size: 16px !important;">
+The dataset contains reported incidents of crime (with the exception of murders where data exists for each victim) that occurred in the City of Chicago from January 2001 to present. For each incident. the dataset contains a variety of information on the crime including the date and time reported, the type of crime, the latitude and longitude of the crime. and the city block where the crime occurred.</span> 
+
+
+## Data
+<span style="font-size: 16px !important;">
+It is possible to establish a live connection in R to this database using the SoDA API and specifically the RSocrata package.</span>
+
+
+```{r eval=FALSE}
+install.packages("RSocrata")
+library(RSocrata)
+crimedata <- 
+  read.socrata("https://data.cityofchicago.org/OData.svc/ijzp-q8t2")
+```
+
+<span style="font-size: 16px !important;">
+However, since this is a decent size dataset (1.4G), in the interests of building a responsive application the dataset was downloaded and pre-processed in preparation for being used in the application. Therefore the data were simply downloaded and accessed locally.</span>
+<br><br>
+<span style="font-size: 16px !important;">
+For purposes of this application, counts of each type of crime were aggregated to  monthly observations. The analysis picks up from this pre-processed, aggregated data.
+</span>
+
+
+## 
+Read in preprocessed, preaggregated crime data.
+```{r cache=TRUE, echo=TRUE}
+crimedata <- read.csv(file="./data/chi_crime_agg.csv")
+crimedata$month <- as.Date(crimedata$month)
+```
+
+Get Total Crime Trend
+```{r cache=TRUE, echo=TRUE}
+library(plyr)
+allcrime  <- ddply(crimedata, c("month"), summarise,
+                   count = sum(count)   )
+```
+
+Plot Total Crime Trend
+```{r cache=TRUE, echo=TRUE}
+library(ggplot2)
+g <- ggplot(data=allcrime, aes(x = month, y = count)) 
+g <- g + geom_line()
+g <- g + scale_x_date(name="Time",
+        seq(as.Date(min(allcrime$month)), 
+            as.Date(max(allcrime$month)), by="2 years"),
+            date_labels = "%Y")
+g <- g + ylab("Incidents") + ggtitle("Monthly Incidents of All Reported Crimes")
+```
+
+##Plot Total Crime Trend
+```{r cache=TRUE, echo=FALSE}
+g
+```
+
+Check out the full application at: <https://jmaurer339.shinyapps.io/ChiCrime/>
+
